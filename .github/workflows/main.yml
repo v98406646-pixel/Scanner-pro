@@ -13,6 +13,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # 1. Создаем папку www и копируем туда index.html из корня
+    - name: Prepare Web Directory
+      run: |
+        mkdir -p www
+        cp index.html www/index.html
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -24,7 +30,7 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    # 1. Робот сам создает настройки проекта
+    # 2. Робот сам создает настройки проекта
     - name: Create Config Files
       run: |
         cat > package.json << 'EOF'
@@ -65,7 +71,7 @@ jobs:
     - name: Sync Capacitor
       run: npx cap sync
 
-    # 2. Генерация иконки из файла icon.png
+    # 3. Генерация иконки из файла icon.png
     - name: Prepare Icons
       run: |
         mkdir -p assets
@@ -74,25 +80,25 @@ jobs:
     - name: Generate App Icons
       run: npx @capacitor/assets generate --android --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#000000'
 
-    # 3. Вшиваем разрешения (Камера, Микрофон, Галерея)
+    # 4. Вшиваем разрешения (Камера, Микрофон, Галерея)
     - name: Inject All Permissions
       run: |
         sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
 
-    # 4. МЕНЯЕМ СИСТЕМНОЕ НАЗВАНИЕ ПРИЛОЖЕНИЯ НА "Сканер PRO"
+    # 5. МЕНЯЕМ СИСТЕМНОЕ НАЗВАНИЕ ПРИЛОЖЕНИЯ НА "Сканер PRO"
     - name: Set App Name
       run: |
         sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">Сканер PRO<\/string>/' android/app/src/main/res/values/strings.xml
         sed -i 's/<string name="title_activity_main">.*<\/string>/<string name="title_activity_main">Сканер PRO<\/string>/' android/app/src/main/res/values/strings.xml
 
-    # 5. Сборка APK
+    # 6. Сборка APK
     - name: Build APK
       run: |
         cd android
         chmod +x gradlew
         ./gradlew assembleDebug
 
-    # 6. Выгрузка готового файла
+    # 7. Выгрузка готового файла
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
