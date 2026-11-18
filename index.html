@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Сканер PRO (Max)</title>
+</head>
+<body>
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: #09090b; --surface: rgba(24, 24, 27, 0.75); --surface-solid: #18181b;
+    --text: #fafafa; --text-muted: #a1a1aa; --border: rgba(255, 255, 255, 0.08);
+    --primary: #3b82f6; --primary-grad: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --chat-user: #3b82f6; --chat-bot: rgba(255, 255, 255, 0.1);
+  }
+  body.light {
+    --bg: #f8fafc; --surface: rgba(255, 255, 255, 0.75); --surface-solid: #ffffff;
+    --text: #0f172a; --text-muted: #64748b; --border: rgba(0, 0, 0, 0.05);
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.08); --chat-bot: rgba(0, 0, 0, 0.05);
+  }
+  body.light .chat-msg.bot { color: #0f172a; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; display: flex; flex-direction: column; transition: background 0.3s, color 0.3s; overflow: hidden; }
+  .material-symbols-rounded { font-size: 24px; vertical-align: middle; }
+  
+  header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--surface); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); z-index: 10; flex-shrink: 0; }
+  .header-title h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header-title small { display: block; font-size: 13px; color: var(--text-muted); margin-top: 2px; font-weight: 500;}
+  .header-buttons { display: flex; gap: 12px; }
+  .icon-btn { background: var(--surface-solid); border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .icon-btn:active { transform: scale(0.9); }
+
+  main { flex: 1; display: flex; flex-direction: column; padding: 16px; padding-bottom: 230px; gap: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
+
+  #preview-wrap { min-height: 200px; max-height: 40vh; background: var(--surface-solid); border-radius: 24px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); border: 1px solid var(--border); flex-shrink: 0; }
+  #preview { max-width: 100%; max-height: 100%; display: block; }
+
+  .cropper-container.css-filter-bw canvas,
+  .cropper-container.css-filter-bw img { filter: grayscale(1) contrast(1.4) !important; }
+  .cropper-container.css-filter-magic canvas,
+  .cropper-container.css-filter-magic img { filter: grayscale(1) contrast(2.5) brightness(1.1) !important; }
+
+  #filters { display: flex; gap: 8px; overflow-x: auto; flex-shrink: 0; align-items: center; }
+  .filter-btn { flex: 1; padding: 8px 12px; border-radius: 12px; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; white-space: nowrap; transition: all 0.2s; }
+  .filter-btn.active { background: var(--primary-grad); color: white; border-color: transparent; }
+  
+  .icon-small-btn { flex: 0 0 auto; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--surface-solid); color: var(--text-muted); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; transition: 0.2s; }
+  .icon-small-btn:active { transform: scale(0.9); }
+  .icon-small-btn.reset { color: var(--danger); }
+
+  #pages { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0; flex-shrink: 0; }
+  #pages:empty { display: none; }
+  .thumb { position: relative; flex: 0 0 auto; width: 80px; height: 105px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--surface-solid); box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: popIn 0.3s ease; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb-del { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(239, 68, 68, 0.9); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); }
+
+  #filename-wrap { display: flex; align-items: center; gap: 12px; background: var(--surface-solid); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); border: 1px solid var(--border); flex-shrink: 0; }
+  #filename-wrap input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); font-size: 16px; font-weight: 500; }
+
+  #save-actions { position: fixed; bottom: 140px; left: 16px; right: 16px; display: flex; gap: 8px; z-index: 60; transition: all 0.3s ease; }
+  #save-actions .btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px; border-radius: 16px; font-size: 14px; font-weight: 700; border: none; cursor: pointer; }
+
+  #bottom-nav { position: fixed; bottom: 16px; left: 16px; right: 16px; background: var(--surface); backdrop-filter: blur(20px); border-radius: 24px; padding: 12px; padding-bottom: max(12px, env(safe-area-inset-bottom)); box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 50; }
+  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; padding: 8px; }
+  .nav-btn .material-symbols-rounded { font-size: 26px; }
+  .nav-btn:active { transform: scale(0.9); }
+
+  .fab-scan { width: 64px; height: 64px; border-radius: 50%; background: var(--primary-grad); color: white; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4); transform: translateY(-20px); transition: all 0.3s ease; }
+  .fab-scan:active { transform: translateY(-20px) scale(0.9); }
+  .fab-scan .material-symbols-rounded { font-size: 32px; }
+  .action-btn { display: none; }
+  .action-btn.visible { display: flex; }
+
+  #btn-voice { position: fixed; bottom: 200px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); cursor: pointer; z-index: 55; transition: all 0.3s; }
+  #btn-voice.listening { background: var(--danger); color: white; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+  #assistant-chat { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-solid); border-radius: 24px 24px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s ease, visibility 0.3s; z-index: 100; max-height: 70vh; border-top: 1px solid var(--border); pointer-events: none; visibility: hidden; }
+  #assistant-chat.open { transform: translateY(0); pointer-events: auto; visibility: visible; }
+  .chat-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border); }
+  .chat-header h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  #btn-close-chat { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+  #chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .chat-msg { max-width: 85%; padding: 14px 18px; border-radius: 20px; font-size: 15px; line-height: 1.4; position: relative; animation: slideUp 0.3s ease; display: flex; flex-direction: column; gap: 8px; white-space: pre-wrap; }
+  .chat-msg.user { background: var(--chat-user); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .chat-msg.bot { background: var(--chat-bot); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg-actions { display: flex; gap: 8px; margin-top: 4px; align-self: flex-end; }
+  .msg-btn { background: rgba(255,255,255,0.1); border: none; color: var(--text); padding: 6px 12px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+
+  /* --- АРХИВ И ВЫДЕЛЕНИЕ --- */
+  #archive-modal, #help-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 250; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s ease, visibility 0.3s; pointer-events: none; visibility: hidden; }
+  #help-modal { background: rgba(0,0,0,0.8); z-index: 280; align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 20px; }
+  #archive-modal.open, #help-modal.open { transform: translateX(0); pointer-events: auto; visibility: visible; }
+  
+  .archive-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--surface); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .archive-header h2 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  
+  /* Вкладки */
+  .archive-tabs { display: flex; gap: 8px; padding: 8px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .tab-btn { flex: 1; padding: 10px; border-radius: 12px; border: none; background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+  .tab-btn.active { background: var(--surface-solid); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+  .archive-actions { display: flex; gap: 8px; }
+  #btn-select-all { color: var(--primary); }
+  #btn-delete-selected { color: var(--danger); display: none; }
+
+  .archive-list { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  
+  .doc-card { background: var(--surface-solid); border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid var(--border); animation: slideUp 0.3s ease; }
+  .doc-checkbox { width: 22px; height: 22px; cursor: pointer; accent-color: var(--danger); flex-shrink: 0; }
+  .doc-icon { background: rgba(239, 68, 68, 0.1); color: var(--danger); width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .doc-info { flex: 1; overflow: hidden; }
+  .doc-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-date { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .doc-actions { display: flex; gap: 8px; }
+  .doc-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  .help-content { background: var(--surface-solid); width: 100%; max-width: 400px; border-radius: 24px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
+  .help-content h3 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+  .help-item { display: flex; flex-direction: column; gap: 4px; background: var(--surface); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); }
+  .help-item b { font-size: 15px; color: var(--text); }
+  .help-item p { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+  #sig-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 300; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; visibility: hidden; transition: all 0.3s; padding: 20px; backdrop-filter: blur(5px); }
+  #sig-modal.open { opacity: 1; pointer-events: auto; visibility: visible; }
+  .sig-content { background: var(--surface-solid); width: 100%; max-width: 500px; border-radius: 24px; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
+  .sig-header { display: flex; justify-content: space-between; align-items: center; }
+  .sig-header h3 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .color-picker { display: flex; gap: 8px; }
+  .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+  .color-btn.active { border-color: var(--text); }
+  .sig-canvas-wrap { background: #fff; border-radius: 16px; overflow: hidden; border: 2px dashed var(--border); }
+  #sig-canvas { width: 100%; height: 200px; display: block; touch-action: none; cursor: crosshair; }
+
+  #pos-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 350; display: flex; flex-direction: column; opacity: 0; pointer-events: none; visibility: hidden; transition: all 0.3s; padding: 16px; }
+  #pos-modal.open { opacity: 1; pointer-events: auto; visibility: visible; }
+  .pos-header { display: flex; justify-content: space-between; align-items: center; color: #fff; padding-bottom: 12px; }
+  .pos-header h3 { font-size: 18px; font-weight: 700; }
+  #pos-container { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  #pos-bg { max-width: 100%; max-height: 100%; display: block; border-radius: 8px; }
+  #pos-sig { position: absolute; width: 25%; max-width: 200px; cursor: move; touch-action: none; background: transparent; border: none; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
+  
+  .size-control { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; }
+  .size-control label { color: #fff; font-size: 14px; display: flex; justify-content: space-between; }
+  #sig-size-slider { width: 100%; accent-color: var(--success); cursor: pointer; }
+
+  #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 9999; pointer-events: none; }
+  .toast { background: var(--surface-solid); color: var(--text); padding: 14px 24px; border-radius: 30px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.3); border: 1px solid var(--border); animation: toastIn 0.3s ease forwards; }
+
+  @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes slideUp { 0% { transform: translateY(20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  @keyframes toastIn { 0% { transform: translateY(-20px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  @keyframes toastOut { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-20px); opacity: 0; } }
+  
+  .hidden { display: none !important; }
+</style>
+
+<header>
+  <div class="header-title">
+    <h1>Сканер PRO</h1>
+    <small id="page-count">Страниц: 0</small>
+  </div>
+  <div class="header-buttons">
+    <button id="btn-theme" class="icon-btn"><span class="material-symbols-rounded">dark_mode</span></button>
+    <button id="btn-archive" class="icon-btn"><span class="material-symbols-rounded">folder_open</span></button>
+  </div>
+</header>
+
+<main>
+  <div id="preview-wrap" class="hidden"><img id="preview" alt="Превью"></div>
+  
+  <div id="filters" class="hidden">
+    <button class="filter-btn active" data-filter="original">Оригинал</button>
+    <button class="filter-btn" data-filter="bw">Ч/Б</button>
+    <button class="filter-btn" data-filter="magic">Магия</button>
+    <button id="btn-info" class="icon-small-btn" title="Справка">
+      <span class="material-symbols-rounded">info</span>
+    </button>
+    <button id="btn-restore" class="icon-small-btn reset" title="Вернуть оригинал">
+      <span class="material-symbols-rounded">restart_alt</span>
+    </button>
+  </div>
+
+  <div id="pages"></div>
+  <div id="filename-wrap" class="hidden">
+    <span class="material-symbols-rounded" style="color:var(--primary);">description</span>
+    <input type="text" id="pdf-name" placeholder="Название файла...">
+  </div>
+</main>
+
+<div id="save-actions" class="hidden">
+  <button id="btn-jpg" style="flex: 0.8; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text);"><span class="material-symbols-rounded">image</span> JPG</button>
+  <button id="btn-pdf" style="flex: 1.2; background: var(--primary-grad); color: white;"><span class="material-symbols-rounded">picture_as_pdf</span> PDF</button>
+  <button id="btn-share" style="flex: 0.8; background: var(--surface-solid); border: 1px solid var(--border); color: var(--primary);"><span class="material-symbols-rounded">share</span></button>
+  <button id="btn-reset" style="flex: 0.5; background: var(--surface-solid); border: 1px solid var(--border); color: var(--danger);"><span class="material-symbols-rounded">delete</span></button>
+</div>
+
+<div id="bottom-nav">
+  <button id="btn-gallery" class="nav-btn"><span class="material-symbols-rounded">photo_library</span> Галерея</button>
+  <button id="btn-check" class="nav-btn action-btn" style="color: var(--warning);"><span class="material-symbols-rounded">document_scanner</span> Текст</button>
+  <button id="btn-camera" class="fab-scan"><span class="material-symbols-rounded">photo_camera</span></button>
+  <button id="btn-sign" class="nav-btn action-btn" style="color: var(--primary);"><span class="material-symbols-rounded">draw</span> Подпись</button>
+  <button id="btn-add" class="nav-btn action-btn" style="color: var(--success);"><span class="material-symbols-rounded">check_circle</span> В список</button>
+</div>
+
+<button id="btn-voice"><span class="material-symbols-rounded">mic</span></button>
+
+<div id="help-modal">
+  <div class="help-content">
+    <h3><span class="material-symbols-rounded">auto_awesome</span> Режимы сканирования</h3>
+    <div class="help-item"><b>Оригинал</b><p>Цветной скан без изменений.</p></div>
+    <div class="help-item"><b>Ч/Б</b><p>Классический черно-белый текст.</p></div>
+    <div class="help-item"><b>Магия</b><p>Убирает тени, фон белый, текст черный.</p></div>
+    <div class="help-item" style="border-color: rgba(239, 68, 68, 0.3);"><b style="color: var(--danger);">Сброс</b><p>Отменяет все изменения и возвращает исходное фото.</p></div>
+    <button id="btn-close-help" class="btn success" style="padding: 14px; border-radius: 12px; border: none; font-weight: 600; font-size: 16px; cursor: pointer;">Понятно</button>
+  </div>
+</div>
+
+<div id="assistant-chat">
+  <div class="chat-header">
+    <h2><span class="material-symbols-rounded" style="color: var(--warning);">robot</span> Ассистент</h2>
+    <button id="btn-close-chat"><span class="material-symbols-rounded">keyboard_arrow_down</span></button>
+  </div>
+  <div id="chat-messages"></div>
+</div>
+
+<!-- ОБНОВЛЕННЫЙ АРХИВ С КОРЗИНОЙ -->
+<div id="archive-modal">
+  <div class="archive-header">
+    <h2><span class="material-symbols-rounded">folder</span> Архив</h2>
+    <div class="archive-actions">
+      <button id="btn-delete-selected" class="icon-btn" title="Удалить выбранные"><span class="material-symbols-rounded">delete_sweep</span></button>
+      <button id="btn-close-archive" class="icon-btn"><span class="material-symbols-rounded">arrow_back</span></button>
+    </div>
+  </div>
+  
+  <!-- ВКЛАДКИ -->
+  <div class="archive-tabs">
+    <button id="tab-active" class="tab-btn active">Файлы</button>
+    <button id="tab-trash" class="tab-btn">Корзина</button>
+  </div>
+
+  <div class="archive-list" id="archive-list"></div>
+</div>
+
+<div id="sig-modal">
+  <div class="sig-content">
+    <div class="sig-header">
+      <h3><span class="material-symbols-rounded">edit</span> Подпись</h3>
+      <div class="color-picker">
+        <button class="color-btn active" style="background: #000;" data-color="#000"></button>
+        <button class="color-btn" style="background: #1d4ed8;" data-color="#1d4ed8"></button>
+        <button class="color-btn" style="background: #dc2626;" data-color="#dc2626"></button>
+      </div>
+    </div>
+    <div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas></div>
+    <div class="row" style="display:flex; gap:12px;">
+      <button id="btn-clear-sig" style="flex:1; background:var(--surface); color:var(--text); border:1px solid var(--border); padding:14px; border-radius:12px; font-weight:600;">Очистить</button>
+      <button id="btn-apply-sig" style="flex:1; background:var(--success); color:white; border:none; padding:14px; border-radius:12px; font-weight:600;">Далее</button>
+    </div>
+  </div>
+</div>
+
+<div id="pos-modal">
+  <div class="pos-header">
+    <h3><span class="material-symbols-rounded">open_with</span> Двигай и меняй размер</h3>
+    <button id="btn-close-pos" style="background:none; border:none; color:#fff; font-size:24px;">&times;</button>
+  </div>
+  <div id="pos-container">
+    <img id="pos-bg" src="">
+    <img id="pos-sig" src="">
+  </div>
+  <div class="size-control">
+    <label>Размер подписи <span style="color:var(--success);">↔</span></label>
+    <input type="range" id="sig-size-slider" min="10" max="70" value="25" step="1">
+  </div>
+  <div>
+    <button id="btn-confirm-pos" class="btn success" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 700; font-size: 16px; border: none;">Применить</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  let db;
+  const dbName = "ScannerAppDB";
+  const storeName = "documents";
+  let selectedDocs = new Set(); 
+  let currentTab = 'active'; // 'active' или 'trash'
+
+  function initDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, 1);
+      request.onerror = (e) => reject(e.target.error);
+      request.onsuccess = (e) => { db = e.target.result; resolve(); };
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+      };
+    });
+  }
+
+  // При сохранении явно ставим isDeleted = false
+  function saveToDB(name, blob) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, "readwrite");
+      const request = tx.objectStore(storeName).add({ name, date: new Date().getTime(), data: blob, isDeleted: false });
+      request.onsuccess = () => resolve();
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  // Универсальная функция обновления статуса (в корзину или обратно)
+  function updateDocStatus(id, isDeleted) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, "readwrite");
+      const store = tx.objectStore(storeName);
+      const getReq = store.get(id);
+      
+      getReq.onsuccess = () => {
+        const doc = getReq.result;
+        if (doc) {
+          doc.isDeleted = isDeleted;
+          const putReq = store.put(doc);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = (e) => reject(e.target.error);
+        } else {
+          resolve();
+        }
+      };
+      getReq.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  // Удалить НАВСЕГДА
+  function deleteFromDB(id) {
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(storeName, "readwrite").objectStore(storeName).delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  function getFromDB() {
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(storeName, "readonly").objectStore(storeName).getAll();
+      request.onsuccess = (e) => resolve(e.target.result);
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  const isNative = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera);
+  const plugins = isNative ? window.Capacitor.Plugins : null;
+
+  const btnArchive = document.getElementById('btn-archive');
+  const btnTheme   = document.getElementById('btn-theme');
+  const btnCamera  = document.getElementById('btn-camera');
+  const btnGallery = document.getElementById('btn-gallery');
+  const btnCheck   = document.getElementById('btn-check');
+  const btnAdd     = document.getElementById('btn-add');
+  const btnSign    = document.getElementById('btn-sign');
+  const btnJpg     = document.getElementById('btn-jpg');
+  const btnPdf     = document.getElementById('btn-pdf');
+  const btnShare   = document.getElementById('btn-share');
+  const btnReset   = document.getElementById('btn-reset');
+  const btnRestore = document.getElementById('btn-restore');
+  const btnInfo    = document.getElementById('btn-info');
+  const btnCloseHelp = document.getElementById('btn-close-help');
+  const btnVoice   = document.getElementById('btn-voice');
+  const saveActions= document.getElementById('save-actions');
+  const filtersDiv = document.getElementById('filters');
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  
+  const previewImg = document.getElementById('preview');
+  const previewWrap= document.getElementById('preview-wrap');
+  const pagesEl    = document.getElementById('pages');
+  const countEl    = document.getElementById('page-count');
+  const fileNameWrap = document.getElementById('filename-wrap');
+  const fileNameInput= document.getElementById('pdf-name');
+  const toastContainer = document.getElementById('toast-container');
+  
+  // Архив
+  const archiveModal = document.getElementById('archive-modal');
+  const archiveList = document.getElementById('archive-list');
+  const btnCloseArchive = document.getElementById('btn-close-archive');
+  const btnDeleteSelected = document.getElementById('btn-delete-selected');
+  const tabActive = document.getElementById('tab-active');
+  const tabTrash = document.getElementById('tab-trash');
+
+  const helpModal = document.getElementById('help-modal');
+
+  const chatContainer = document.getElementById('assistant-chat');
+  const chatMessages  = document.getElementById('chat-messages');
+  const btnCloseChat  = document.getElementById('btn-close-chat');
+
+  const sigModal = document.getElementById('sig-modal');
+  const sigCanvas = document.getElementById('sig-canvas');
+  const btnClearSig = document.getElementById('btn-clear-sig');
+  const btnApplySig = document.getElementById('btn-apply-sig');
+  const colorBtns = document.querySelectorAll('.color-btn');
+  let sigCtx = sigCanvas.getContext('2d');
+  let isDrawing = false;
+  let currentSigColor = '#000';
+
+  const posModal = document.getElementById('pos-modal');
+  const posBg = document.getElementById('pos-bg');
+  const posSig = document.getElementById('pos-sig');
+  const btnClosePos = document.getElementById('btn-close-pos');
+  const btnConfirmPos = document.getElementById('btn-confirm-pos');
+  const sigSizeSlider = document.getElementById('sig-size-slider');
+  
+  let isDraggingSig = false;
+  let sigStartX, sigStartY, sigLeft, sigTop;
+  let trimmedSigCanvas = null;
+
+  let cropper = null;
+  let pages = [];
+  let lastPdfBlob = null;
+  let originalRawImage = null; 
+  let currentCroppedCanvas = null; 
+  let currentFilter = 'original';
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let isListening = false;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      isListening = true;
+      btnVoice.classList.add('listening');
+      showToast('🎤 Слушаю...');
+    };
+
+    recognition.onresult = (event) => {
+      const command = event.results[0][0].transcript.toLowerCase();
+      showToast('Вы сказали: ' + command);
+
+      if (command.includes('скан') || command.includes('камер') || command.includes('фот')) {
+        btnCamera.click();
+      } else if (command.includes('добав') || command.includes('список')) {
+        if (!btnAdd.classList.contains('hidden')) btnAdd.click();
+      } else if (command.includes('пдф') || command.includes('pdf') || command.includes('сохран')) {
+        if (!btnPdf.disabled) btnPdf.click();
+      } else if (command.includes('сброс') || command.includes('удали')) {
+        if (!btnReset.disabled) btnReset.click();
+      } else if (command.includes('подпис')) {
+        if (!btnSign.classList.contains('hidden')) btnSign.click();
+      }
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error !== 'no-speech') showToast('Ошибка микрофона');
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      btnVoice.classList.remove('listening');
+    };
+  }
+
+  btnVoice.addEventListener('click', () => {
+    if (!recognition) {
+      showToast('Браузер не поддерживает голос');
+      return;
+    }
+    if (isListening) recognition.stop();
+    else recognition.start();
+  });
+
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'toastOut 0.3s ease forwards';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  btnInfo.onclick = () => helpModal.classList.add('open');
+  btnCloseHelp.onclick = () => helpModal.classList.remove('open');
+
+  // --- ЛОГИКА АРХИВА ---
+  function updateDeleteButtonVisibility() {
+    if (selectedDocs.size > 0) {
+      btnDeleteSelected.style.display = 'flex';
+    } else {
+      btnDeleteSelected.style.display = 'none';
+    }
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    selectedDocs.clear();
+    updateDeleteButtonVisibility();
+    tabActive.classList.toggle('active', tab === 'active');
+    tabTrash.classList.toggle('active', tab === 'trash');
+    loadArchive();
+  }
+
+  tabActive.onclick = () => switchTab('active');
+  tabTrash.onclick = () => switchTab('trash');
+
+  async function loadArchive() {
+    archiveList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">Загрузка...</div>';
+    try {
+      let docs = await getFromDB();
+      
+      // Фильтруем по вкладке
+      if (currentTab === 'active') {
+        docs = docs.filter(d => !d.isDeleted);
+      } else {
+        docs = docs.filter(d => d.isDeleted);
+      }
+
+      archiveList.innerHTML = '';
+      if (docs.length === 0) {
+        const emptyMsg = currentTab === 'active' ? 'Здесь пусто.' : 'Корзина пуста.';
+        archiveList.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--text-muted); font-size:16px;">${emptyMsg}</div>`;
+        return;
+      }
+
+      docs.sort((a, b) => b.date - a.date);
+      docs.forEach(doc => {
+        const card = document.createElement('div');
+        card.className = 'doc-card';
+        const d = new Date(doc.date);
+        
+        let actionButtons = '';
+        if (currentTab === 'active') {
+          // В активных можно только открыть
+          actionButtons = `<button class="doc-btn open-btn"><span class="material-symbols-rounded">visibility</span></button>`;
+        } else {
+          // В корзине можно восстановить или удалить навсегда
+          actionButtons = `
+            <button class="doc-btn restore-btn" style="color:var(--success);"><span class="material-symbols-rounded">restore_from_trash</span></button>
+            <button class="doc-btn force-del-btn" style="color:var(--danger);"><span class="material-symbols-rounded">delete_forever</span></button>
+          `;
+        }
+
+        card.innerHTML = `
+          <input type="checkbox" class="doc-checkbox" data-id="${doc.id}">
+          <div class="doc-icon"><span class="material-symbols-rounded">picture_as_pdf</span></div>
+          <div class="doc-info"><div class="doc-name">${doc.name}</div><div class="doc-date">${d.toLocaleDateString()}</div></div>
+          <div class="doc-actions">${actionButtons}</div>
+        `;
+        
+        const checkbox = card.querySelector('.doc-checkbox');
+        checkbox.onchange = (e) => {
+          if (e.target.checked) selectedDocs.add(doc.id);
+          else selectedDocs.delete(doc.id);
+          updateDeleteButtonVisibility();
+        };
+
+        if (currentTab === 'active') {
+          card.querySelector('.open-btn').onclick = () => window.open(URL.createObjectURL(doc.data), '_blank');
+        } else {
+          card.querySelector('.restore-btn').onclick = async () => {
+            await updateDocStatus(doc.id, false);
+            loadArchive();
+            showToast('Восстановлено');
+          };
+          card.querySelector('.force-del-btn').onclick = async () => {
+            if (confirm('Удалить навсегда?')) {
+              await deleteFromDB(doc.id);
+              loadArchive();
+              showToast('Удалено навсегда');
+            }
+          };
+        }
+        
+        archiveList.appendChild(card);
+      });
+    } catch (e) { archiveList.innerHTML = 'Ошибка загрузки'; }
+  }
+
+  // Действие большой красной кнопки
+  btnDeleteSelected.onclick = async () => {
+    if (selectedDocs.size === 0) return;
+    
+    if (currentTab === 'active') {
+      if (confirm(`Переместить выделенные (${selectedDocs.size} шт.) в корзину?`)) {
+        for (const id of selectedDocs) await updateDocStatus(id, true);
+        selectedDocs.clear();
+        loadArchive();
+        showToast('Перемещено в корзину');
+      }
+    } else {
+      if (confirm(`Удалить навсегда выделенные (${selectedDocs.size} шт.)?`)) {
+        for (const id of selectedDocs) await deleteFromDB(id);
+        selectedDocs.clear();
+        loadArchive();
+        showToast('Удалено навсегда');
+      }
+    }
+  };
+
+  btnArchive.addEventListener('click', () => { archiveModal.classList.add('open'); switchTab('active'); });
+  btnCloseArchive.addEventListener('click', () => archiveModal.classList.remove('open'));
+
+  function applyFilterToCanvas(sourceCanvas, filterType) {
+    const canvas = document.createElement('canvas');
+    canvas.width = sourceCanvas.width;
+    canvas.height = sourceCanvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(sourceCanvas, 0, 0);
+
+    if (filterType === 'original') return canvas;
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+
+    for (let i = 0; i < d.length; i += 4) {
+      const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+      if (filterType === 'bw') {
+        const c = Math.min(255, Math.max(0, (gray - 128) * 1.4 + 128));
+        d[i] = d[i+1] = d[i+2] = c;
+      } else if (filterType === 'magic') {
+        const c = gray > 130 ? 255 : 0;
+        d[i] = d[i+1] = d[i+2] = c;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  }
+
+  filterBtns.forEach(btn => {
+    btn.onclick = () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      
+      const cropperContainer = document.querySelector('.cropper-container');
+      if (cropperContainer) {
+        cropperContainer.classList.remove('css-filter-bw', 'css-filter-magic');
+        if (currentFilter === 'bw') cropperContainer.classList.add('css-filter-bw');
+        if (currentFilter === 'magic') cropperContainer.classList.add('css-filter-magic');
+      }
+    };
+  });
+
+  btnRestore.onclick = () => {
+    if (originalRawImage) {
+      showPreview(originalRawImage); 
+      showToast('Оригинал восстановлен');
+    }
+  };
+
+  colorBtns.forEach(btn => {
+    btn.onclick = () => {
+      colorBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentSigColor = btn.dataset.color;
+      sigCtx.strokeStyle = currentSigColor;
+    };
+  });
+
+  function resizeSigCanvas() {
+    const rect = sigCanvas.parentElement.getBoundingClientRect();
+    sigCanvas.width = rect.width > 0 ? rect.width : 300; 
+    sigCanvas.height = 200; 
+    sigCtx.lineWidth = 3; 
+    sigCtx.lineCap = 'round'; 
+    sigCtx.strokeStyle = currentSigColor;
+  }
+  window.addEventListener('resize', resizeSigCanvas);
+
+  function startDrawing(e) {
+    isDrawing = true; const rect = sigCanvas.getBoundingClientRect(); sigCtx.beginPath();
+    sigCtx.moveTo((e.touches ? e.touches[0].clientX : e.clientX) - rect.left, (e.touches ? e.touches[0].clientY : e.clientY) - rect.top);
+  }
+  function draw(e) {
+    if (!isDrawing) return; e.preventDefault(); const rect = sigCanvas.getBoundingClientRect();
+    sigCtx.lineTo((e.touches ? e.touches[0].clientX : e.clientX) - rect.left, (e.touches ? e.touches[0].clientY : e.clientY) - rect.top); sigCtx.stroke();
+  }
+  function stopDrawing() { isDrawing = false; }
+
+  sigCanvas.addEventListener('mousedown', startDrawing); sigCanvas.addEventListener('mousemove', draw); sigCanvas.addEventListener('mouseup', stopDrawing); sigCanvas.addEventListener('mouseout', stopDrawing);
+  sigCanvas.addEventListener('touchstart', startDrawing, {passive: false}); sigCanvas.addEventListener('touchmove', draw, {passive: false}); sigCanvas.addEventListener('touchend', stopDrawing);
+
+  btnSign.addEventListener('click', () => { 
+    if (!currentCroppedCanvas && cropper) {
+      currentCroppedCanvas = cropper.getCroppedCanvas({ maxWidth: 2000, maxHeight: 2000 });
+    }
+    sigModal.classList.add('open'); 
+    setTimeout(resizeSigCanvas, 100); 
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); 
+  });
+  
+  btnClearSig.addEventListener('click', () => sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height));
+  
+  function getTrimmedSignature(sourceCanvas) {
+    const ctx = sourceCanvas.getContext('2d');
+    const pixels = ctx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    const l = pixels.data.length;
+    let bound = { top: null, left: null, right: null, bottom: null };
+    let x, y;
+
+    for (let i = 0; i < l; i += 4) {
+      if (pixels.data[i + 3] !== 0) {
+        x = (i / 4) % sourceCanvas.width;
+        y = Math.floor((i / 4) / sourceCanvas.width);
+        if (bound.top === null) bound.top = y;
+        if (bound.left === null) bound.left = x; else if (x < bound.left) bound.left = x;
+        if (bound.right === null) bound.right = x; else if (bound.right < x) bound.right = x;
+        if (bound.bottom === null) bound.bottom = y; else if (bound.bottom < y) bound.bottom = y;
+      }
+    }
+
+    if (bound.top === null) return null;
+
+    const trimmedCanvas = document.createElement('canvas');
+    const width = bound.right - bound.left + 1;
+    const height = bound.bottom - bound.top + 1;
+    trimmedCanvas.width = width;
+    trimmedCanvas.height = height;
+    
+    const tCtx = trimmedCanvas.getContext('2d');
+    tCtx.drawImage(sourceCanvas, bound.left, bound.top, width, height, 0, 0, width, height);
+    return trimmedCanvas;
+  }
+
+  btnApplySig.addEventListener('click', () => {
+    if (!currentCroppedCanvas) return; 
+    
+    trimmedSigCanvas = getTrimmedSignature(sigCanvas);
+    if (!trimmedSigCanvas) {
+        showToast('Сначала нарисуйте подпись!');
+        return;
+    }
+
+    sigModal.classList.remove('open');
+    
+    posBg.src = currentCroppedCanvas.toDataURL('image/jpeg', 0.9);
+    posSig.src = trimmedSigCanvas.toDataURL('image/png');
+    
+    sigSizeSlider.value = 25;
+    posSig.style.width = '25%';
+    posSig.style.left = '30%';
+    posSig.style.top = '30%';
+    
+    posModal.classList.add('open');
+  });
+
+  sigSizeSlider.addEventListener('input', (e) => {
+    posSig.style.width = e.target.value + '%';
+  });
+
+  posSig.addEventListener('pointerdown', (e) => {
+    isDraggingSig = true;
+    sigStartX = e.clientX;
+    sigStartY = e.clientY;
+    sigLeft = posSig.offsetLeft;
+    sigTop = posSig.offsetTop;
+    posSig.setPointerCapture(e.pointerId);
+  });
+
+  posSig.addEventListener('pointermove', (e) => {
+    if (!isDraggingSig) return;
+    const dx = e.clientX - sigStartX;
+    const dy = e.clientY - sigStartY;
+    posSig.style.left = `${sigLeft + dx}px`;
+    posSig.style.top = `${sigTop + dy}px`;
+  });
+
+  posSig.addEventListener('pointerup', (e) => {
+    isDraggingSig = false;
+    posSig.releasePointerCapture(e.pointerId);
+  });
+
+  btnClosePos.onclick = () => posModal.classList.remove('open');
+
+  btnConfirmPos.onclick = () => {
+    const rectBg = posBg.getBoundingClientRect();
+    const rectSig = posSig.getBoundingClientRect();
+
+    const relX = rectSig.left - rectBg.left;
+    const relY = rectSig.top - rectBg.top;
+
+    const scaleX = currentCroppedCanvas.width / rectBg.width;
+    const scaleY = currentCroppedCanvas.height / rectBg.height;
+
+    const finalX = relX * scaleX;
+    const finalY = relY * scaleY;
+    const finalW = rectSig.width * scaleX;
+    const finalH = rectSig.height * scaleY;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = currentCroppedCanvas.width;
+    canvas.height = currentCroppedCanvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(currentCroppedCanvas, 0, 0);
+    ctx.drawImage(trimmedSigCanvas, finalX, finalY, finalW, finalH);
+
+    originalRawImage = canvas.toDataURL('image/jpeg', 0.95);
+    posModal.classList.remove('open');
+
+    previewImg.src = originalRawImage;
+    previewImg.onload = () => {
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(previewImg, { viewMode: 1, autoCropArea: 0.92 });
+        
+        cropper.options.crop = () => {
+            currentCroppedCanvas = cropper.getCroppedCanvas({ maxWidth: 2000, maxHeight: 2000 });
+        };
+
+        const cropperContainer = document.querySelector('.cropper-container');
+        if (cropperContainer) {
+            cropperContainer.classList.remove('css-filter-bw', 'css-filter-magic');
+            if (currentFilter === 'bw') cropperContainer.classList.add('css-filter-bw');
+            if (currentFilter === 'magic') cropperContainer.classList.add('css-filter-magic');
+        }
+
+        setTimeout(() => {
+            currentCroppedCanvas = cropper.getCroppedCanvas({ maxWidth: 2000, maxHeight: 2000 });
+        }, 200);
+    };
+    showToast('Подпись закреплена!');
+  };
+
+  function toggleChat(open) {
+    if (open) chatContainer.classList.add('open'); else chatContainer.classList.remove('open');
+  }
+  btnCloseChat.addEventListener('click', () => toggleChat(false));
+
+  function addChatMessage(sender, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-msg ${sender}`;
+    const textSpan = document.createElement('span'); textSpan.textContent = text; msgDiv.appendChild(textSpan);
+    if (sender === 'bot') {
+      const actionsDiv = document.createElement('div'); actionsDiv.className = 'msg-actions';
+      const copyBtn = document.createElement('button'); copyBtn.className = 'msg-btn'; copyBtn.innerHTML = 'Копи';
+      copyBtn.onclick = () => navigator.clipboard.writeText(text).then(() => showToast('Скопировано!'));
+      const speakBtn = document.createElement('button'); speakBtn.className = 'msg-btn'; speakBtn.innerHTML = 'Слушать';
+      speakBtn.onclick = () => { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; window.speechSynthesis.speak(u); } };
+      actionsDiv.appendChild(copyBtn); actionsDiv.appendChild(speakBtn); msgDiv.appendChild(actionsDiv);
+    }
+    chatMessages.appendChild(msgDiv); chatMessages.scrollTop = chatMessages.scrollHeight;
+    return msgDiv;
+  }
+
+  async function checkQuality() {
+    if (!currentCroppedCanvas) return; toggleChat(true);
+    addChatMessage('user', 'Текст.');
+    const botMsgDiv = addChatMessage('bot', '⏳ Читаю...');
+    try {
+      const canvas = applyFilterToCanvas(currentCroppedCanvas, 'magic'); 
+      const result = await Tesseract.recognize(canvas, 'rus', { logger: m => { if (m.status === 'recognizing text') botMsgDiv.firstChild.textContent = `⏳ Читаю... ${Math.round(m.progress * 100)}%`; } });
+      botMsgDiv.remove(); 
+      let cleanText = result.data.text.replace(/[^а-яА-ЯёЁa-zA-Z0-9\s.,\-:;()"'\n]/g, '').replace(/\n\s*\n/g, '\n').trim();
+      if (cleanText.length > 5) addChatMessage('bot', cleanText); else addChatMessage('bot', 'Текст не распознан.');
+    } catch (error) { botMsgDiv.remove(); addChatMessage('bot', 'Ошибка чтения.'); }
+  }
+
+  async function generatePdfBlob() {
+    if (!pages.length) return null;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth(); const pageH = pdf.internal.pageSize.getHeight(); const margin = 10; const availW = pageW - margin * 2; const availH = pageH - margin * 2 - 5;
+    const dateStr = `Сканировано: ${new Date().toLocaleDateString('ru-RU')}`;
+
+    for (let i = 0; i < pages.length; i++) {
+      if (i > 0) pdf.addPage();
+      const img = new Image(); img.src = pages[i]; await new Promise(res => { img.onload = res; });
+      const tempCanvas = document.createElement('canvas'); const maxDim = 2000;
+      let w = img.width, h = img.height;
+      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; } else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+      tempCanvas.width = w; tempCanvas.height = h; tempCanvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const optimizedImage = tempCanvas.toDataURL('image/jpeg', 0.9);
+      const ratio = w / h; let dw = availW, dh = dw / ratio;
+      if (dh > availH) { dh = availH; dw = dh * ratio; }
+      pdf.addImage(optimizedImage, 'JPEG', margin + (availW - dw) / 2, margin + (availH - dh) / 2, dw, dh);
+      pdf.setFontSize(9); pdf.setTextColor(150, 150, 150); pdf.text(dateStr, margin, pageH - 5);
+    }
+    return pdf.output('blob');
+  }
+
+  async function saveJpg() {
+    if (!pages.length) return; showToast('Генерирую JPG...');
+    try {
+      const images = await Promise.all(pages.map(src => {
+        return new Promise(res => {
+          const img = new Image(); img.src = src; img.onload = () => res(img);
+        });
+      }));
+
+      let totalHeight = 0;
+      const maxWidth = Math.max(...images.map(img => img.width));
+      images.forEach(img => { totalHeight += img.height; });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = maxWidth;
+      canvas.height = totalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let currentY = 0;
+      images.forEach(img => {
+        ctx.drawImage(img, 0, currentY);
+        currentY += img.height;
+      });
+
+      let customName = (fileNameInput.value.trim() || 'Scan_') + '.jpg';
+      
+      if (isNative) {
+        const base64data = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+        await plugins.Filesystem.writeFile({
+          path: 'Download/' + customName, 
+          data: base64data,
+          directory: 'EXTERNAL_STORAGE',
+          recursive: true
+        });
+        showToast('JPG сохранен в Загрузки!');
+      } else {
+        const url = canvas.toDataURL('image/jpeg', 0.9);
+        const a = document.createElement('a'); 
+        a.href = url; a.download = customName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+        showToast('JPG скачан!');
+      }
+    } catch (e) { 
+      console.error(e);
+      showToast('Ошибка создания JPG'); 
+    }
+  }
+
+  async function savePdf() {
+    if (!pages.length) return; showToast('Генерирую...');
+    try {
+      lastPdfBlob = await generatePdfBlob();
+      let customName = fileNameInput.value.trim() || 'Scan_' + Date.now(); 
+      if (!customName.endsWith('.pdf')) customName += '.pdf';
+
+      if (isNative) {
+        const reader = new FileReader();
+        reader.readAsDataURL(lastPdfBlob); 
+        reader.onloadend = async () => {
+          const base64data = reader.result.split(',')[1];
+          const res = await plugins.Filesystem.writeFile({
+            path: 'Download/' + customName, 
+            data: base64data,
+            directory: 'EXTERNAL_STORAGE',
+            recursive: true
+          });
+          showToast('Сохранено в Загрузки!');
+          try { await plugins.Share.share({ title: 'Документ', url: res.uri }); } catch (err) {}
+        };
+      } else {
+        const url = URL.createObjectURL(lastPdfBlob); 
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = customName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Файл скачан');
+      }
+
+      await saveToDB(customName, lastPdfBlob);
+      resetAll(); 
+    } catch (e) { 
+      console.error(e);
+      showToast('Ошибка сохранения.'); 
+    }
+  }
+
+  async function sharePdf() {
+    if (!pages.length) return; showToast('Готовлю...');
+    try {
+      lastPdfBlob = await generatePdfBlob();
+      let customName = fileNameInput.value.trim() || 'Scan_' + Date.now(); 
+      if (!customName.endsWith('.pdf')) customName += '.pdf';
+      const file = new File([lastPdfBlob], customName, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: customName });
+      } else {
+        showToast('Телефон не поддерживает отправку.');
+        await savePdf();
+      }
+    } catch (e) { if (e.name !== 'AbortError') showToast('Ошибка отправки.'); }
+  }
+
+  function updateUI() {
+    countEl.textContent = 'Страниц: ' + pages.length;
+    fileNameWrap.classList.toggle('hidden', pages.length === 0);
+    saveActions.classList.toggle('hidden', pages.length === 0);
+    
+    const hasCropper = !!cropper;
+    btnCheck.classList.toggle('visible', hasCropper);
+    btnSign.classList.toggle('visible', hasCropper);
+    btnAdd.classList.toggle('visible', hasCropper);
+    btnGallery.style.display = hasCropper ? 'none' : 'flex';
+    filtersDiv.classList.toggle('hidden', !hasCropper); 
+
+    pagesEl.innerHTML = '';
+    pages.forEach((dataUrl, i) => {
+      const div = document.createElement('div'); div.className = 'thumb'; div.innerHTML = `<img src="${dataUrl}">`;
+      const del = document.createElement('button'); del.className = 'thumb-del'; del.innerHTML = '×';
+      del.onclick = () => { pages.splice(i, 1); updateUI(); };
+      div.appendChild(del); pagesEl.appendChild(div);
+    });
+  }
+
+  function clearCropper() {
+    if (cropper) { cropper.destroy(); cropper = null; }
+    previewImg.src = ''; 
+    previewWrap.classList.add('hidden');
+    originalRawImage = null;
+    currentCroppedCanvas = null;
+    currentFilter = 'original';
+    
+    const cropperContainer = document.querySelector('.cropper-container');
+    if (cropperContainer) cropperContainer.classList.remove('css-filter-bw', 'css-filter-magic');
+    
+    toggleChat(false); updateUI();
+  }
+
+  function showPreview(dataUrl) {
+    previewWrap.classList.remove('hidden'); previewImg.src = dataUrl;
+    
+    if (!originalRawImage) {
+      originalRawImage = dataUrl;
+    }
+
+    previewImg.onload = () => {
+      if (cropper) cropper.destroy();
+      cropper = new Cropper(previewImg, { viewMode: 1, autoCropArea: 0.92 });
+      
+      cropper.options.crop = () => {
+        currentCroppedCanvas = cropper.getCroppedCanvas({ maxWidth: 2000, maxHeight: 2000 });
+      };
+      
+      setTimeout(() => {
+        currentCroppedCanvas = cropper.getCroppedCanvas({ maxWidth: 2000, maxHeight: 2000 });
+        filterBtns.forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-filter="original"]').classList.add('active');
+        currentFilter = 'original';
+        updateUI();
+      }, 300);
+    };
+  }
+
+  async function takePhoto(source) {
+    clearCropper();
+    if (isNative) {
+      try {
+        const photo = await plugins.Camera.getPhoto({ quality: 90, resultType: 'dataUrl', source: source });
+        showPreview(photo.dataUrl);
+      } catch (e) { showToast('Ошибка камеры'); }
+    } else {
+      const input = document.createElement('input'); 
+      input.type = 'file'; 
+      input.accept = 'image/*';
+      if (source === 'PHOTOS') input.multiple = true; 
+      
+      input.onchange = async () => { 
+        const files = Array.from(input.files); 
+        if (files.length === 0) return; 
+        
+        const firstFile = files.shift();
+        const reader = new FileReader(); 
+        reader.onload = () => {
+          showPreview(reader.result);
+          
+          files.forEach(file => {
+            const r = new FileReader();
+            r.onload = (e) => {
+              const img = new Image();
+              img.onload = () => {
+                const c = document.createElement('canvas');
+                c.width = img.width; c.height = img.height;
+                c.getContext('2d').drawImage(img, 0, 0);
+                const bwc = applyFilterToCanvas(c, 'bw'); 
+                pages.push(bwc.toDataURL('image/jpeg', 0.9));
+                updateUI();
+              };
+              img.src = e.target.result;
+            };
+            r.readAsDataURL(file);
+          });
+        }; 
+        reader.readAsDataURL(firstFile); 
+      };
+      input.click();
+    }
+  }
+
+  function addPage() {
+    if (!currentCroppedCanvas) return;
+    const finalCanvas = applyFilterToCanvas(currentCroppedCanvas, currentFilter);
+    pages.push(finalCanvas.toDataURL('image/jpeg', 0.9));
+    clearCropper(); showToast('Добавлено');
+  }
+
+  function resetAll() { pages = []; fileNameInput.value = ''; lastPdfBlob = null; clearCropper(); }
+
+  btnCamera.addEventListener('click', () => takePhoto('CAMERA'));
+  btnGallery.addEventListener('click', () => takePhoto('PHOTOS'));
+  btnCheck.addEventListener('click', checkQuality);
+  btnAdd.addEventListener('click', addPage);
+  btnJpg.addEventListener('click', saveJpg);
+  btnPdf.addEventListener('click', savePdf);
+  btnShare.addEventListener('click', sharePdf);
+  btnReset.addEventListener('click', () => { if(confirm('Очистить?')) resetAll(); });
+  btnTheme.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    btnTheme.querySelector('.material-symbols-rounded').textContent = document.body.classList.contains('light') ? 'light_mode' : 'dark_mode';
+  });
+
+  initDB().then(() => console.log("БД готова"));
+  updateUI();
+})();
+</script>
+
+</body>
+</html>
